@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Yahya Hashme</title>
+<meta name="description" content="Yahya Hashme — software engineering student at the University of Waterloo. I build clean, useful things for the web." />
+<meta property="og:title" content="Yahya Hashme" />
+<meta property="og:description" content="Software engineering student at Waterloo. I build clean, useful things for the web." />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://yahyahashme.com" />
+<meta name="theme-color" content="#0b0e14" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%231f5fd0'/><text x='50' y='73' font-family='Helvetica,Arial,sans-serif' font-size='66' font-weight='700' fill='%23ffffff' text-anchor='middle'>Y</text></svg>" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=Hanken+Grotesk:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<script>
+  (function () {
+    try {
+      var t = localStorage.getItem('yh-theme');
+      if (!t) t = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) {}
+  })();
+</script>
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --fg: #14181f;
+    --muted: #5b6472;
+    --faint: #dde2ea;
+    --hair: #e7eaf0;
+    --accent: #1f5fd0;
+    --card: #ffffff;
+    --sel: #d5e2f8;
+  }
+  [data-theme="dark"] {
+    --bg: #0b0e14;
+    --fg: #e8ebf1;
+    --muted: #8a93a3;
+    --faint: #222835;
+    --hair: #1b202a;
+    --accent: #5f92ff;
+    --card: #12151d;
+    --sel: #1d2c4c;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: "Hanken Grotesk", system-ui, sans-serif;
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection { background: var(--sel); }
+  a { color: inherit; }
+
+  .skip {
+    position: absolute; left: -9999px; top: 0;
+    background: var(--accent); color: var(--bg); padding: .6rem 1rem; z-index: 100; border-radius: 0 0 6px 0;
+  }
+  .skip:focus { left: 0; }
+
+  /* Header */
+  header {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 1.4rem;
+    padding: .85rem clamp(1.3rem, 5vw, 2.2rem);
+    background: color-mix(in srgb, var(--bg) 85%, transparent);
+    backdrop-filter: blur(9px);
+    border-bottom: 1px solid var(--hair);
+  }
+  .brand {
+    font-family: "Sora", system-ui, sans-serif; font-weight: 600; font-size: 1.02rem;
+    letter-spacing: -.01em; text-decoration: none; color: var(--fg); margin-right: auto;
+  }
+  nav { display: flex; gap: 1.3rem; align-items: center; }
+  nav a {
+    font-family: "JetBrains Mono", monospace; font-size: .72rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); text-decoration: none; transition: color .2s;
+  }
+  nav a:hover { color: var(--accent); }
+  .toggle {
+    font-family: "JetBrains Mono", monospace; font-size: .68rem; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--muted); background: transparent; border: 1px solid var(--faint); border-radius: 999px;
+    padding: .4rem .7rem; cursor: pointer; transition: color .2s, border-color .2s;
+  }
+  .toggle:hover { color: var(--accent); border-color: var(--accent); }
+  @media (max-width: 620px) { nav .anchor { display: none; } }
+
+  .wrap { max-width: 680px; margin: 0 auto; padding: 0 clamp(1.3rem, 5vw, 2.2rem); }
+
+  /* Hero */
+  .hero { padding: clamp(3.2rem, 9vw, 6rem) 0 1rem; }
+  .kicker {
+    font-family: "JetBrains Mono", monospace; font-size: .74rem; letter-spacing: .14em;
+    text-transform: uppercase; color: var(--accent); margin: 0 0 1.1rem;
+  }
+  h1 {
+    font-family: "Sora", system-ui, sans-serif; font-weight: 600;
+    font-size: clamp(2.5rem, 7.5vw, 3.8rem); line-height: 1.06; letter-spacing: -.025em; margin: 0 0 1.5rem;
+  }
+  .lede { font-size: 1.12rem; color: var(--fg); margin: 0 0 1.7rem; max-width: 52ch; }
+  .lede .em { color: var(--fg); border-bottom: 1.5px solid var(--accent); }
+  .herolinks { display: flex; flex-wrap: wrap; gap: 1.4rem; }
+  .herolinks a {
+    font-family: "JetBrains Mono", monospace; font-size: .85rem; text-decoration: none; color: var(--fg);
+    border-bottom: 1px solid var(--accent); padding-bottom: 1px; transition: color .2s;
+  }
+  .herolinks a:hover { color: var(--accent); }
+
+  /* Sections */
+  section { padding: 2.6rem 0; border-top: 1px solid var(--hair); margin-top: 2.6rem; scroll-margin-top: 4rem; }
+  .label {
+    font-family: "JetBrains Mono", monospace; font-size: .72rem; letter-spacing: .16em;
+    text-transform: uppercase; color: var(--muted); margin: 0 0 1.5rem;
+  }
+  section > p { margin: 0 0 1rem; }
+  section > p:last-child { margin-bottom: 0; }
+  .accent-word { color: var(--accent); }
+  .body-link { color: var(--fg); text-decoration: none; border-bottom: 1px solid var(--accent); transition: color .2s; }
+  .body-link:hover { color: var(--accent); }
+
+  /* Row list (work / leadership) */
+  .row { display: grid; grid-template-columns: 8.5rem 1fr; gap: 1.2rem; padding: 1.15rem 0; border-top: 1px solid var(--hair); }
+  .row:first-of-type { border-top: none; padding-top: 0; }
+  .row .meta { font-family: "JetBrains Mono", monospace; font-size: .74rem; letter-spacing: .03em; color: var(--muted); padding-top: .2rem; }
+  .row h3 { font-family: "Hanken Grotesk", sans-serif; font-weight: 600; font-size: 1.05rem; margin: 0 0 .35rem; }
+  .row h3 a { text-decoration: none; border-bottom: 1px solid var(--accent); transition: color .2s; }
+  .row h3 a:hover { color: var(--accent); }
+  .row p { margin: 0; color: var(--muted); font-size: .96rem; }
+  .row .ext { font-family: "JetBrains Mono", monospace; font-size: .72rem; color: var(--accent); margin-left: .1rem; }
+  @media (max-width: 620px) { .row { grid-template-columns: 1fr; gap: .3rem; } .row .meta { padding-top: 0; } }
+
+  /* plain bullets for Now / interests */
+  .plain { list-style: none; padding: 0; margin: 0; }
+  .plain li { padding: .5rem 0; border-top: 1px solid var(--hair); color: var(--fg); }
+  .plain li:first-child { border-top: none; padding-top: 0; }
+
+  /* Links section */
+  .links { list-style: none; padding: 0; margin: 0; }
+  .links li { border-top: 1px solid var(--hair); }
+  .links li:first-child { border-top: none; }
+  .links a {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+    padding: .9rem 0; text-decoration: none; color: var(--fg);
+    font-family: "JetBrains Mono", monospace; font-size: .9rem; transition: color .2s, padding-left .25s ease;
+  }
+  .links a .where { color: var(--muted); font-size: .8rem; transition: color .2s; }
+  .links a:hover { color: var(--accent); padding-left: .5rem; }
+  .links a:hover .where { color: var(--accent); }
+
+  footer {
+    border-top: 1px solid var(--hair); margin-top: 2.6rem; padding: 2rem 0 3rem;
+    font-family: "JetBrains Mono", monospace; font-size: .72rem; letter-spacing: .04em; color: var(--muted);
+  }
+
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+  .toggle:focus-visible { border-radius: 999px; }
+
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <header>
+    <a class="brand" href="#top">Yahya Hashme</a>
+    <nav>
+      <a class="anchor" href="#work">Work</a>
+      <a class="anchor" href="#leadership">Leadership</a>
+      <a class="anchor" href="#links">Links</a>
+      <button class="toggle" id="themeToggle" aria-label="Switch color theme">Dark</button>
+    </nav>
+  </header>
+
+  <main id="main">
+    <div class="wrap" id="top">
+      <section class="hero" style="border-top:none;margin-top:0;">
+        <p class="kicker">Software Engineering · University of Waterloo</p>
+        <h1>Building clean, useful things for the web.</h1>
+        <p class="lede">I'm Yahya. I care about <span class="em">simple design</span> and software that works for the people using it. I'm from Kashmir, and most of what I've built started with a problem sitting right in front of me.</p>
+        <div class="herolinks">
+          <a href="mailto:hello@yahyahashme.com">Email</a>
+          <a href="https://github.com/yahyahashme" target="_blank" rel="noopener">GitHub</a>
+          <a href="https://thekashmirtimeline.com" target="_blank" rel="noopener">The Kashmir Timeline</a>
+        </div>
+      </section>
+
+      <section id="about">
+        <p class="label">About</p>
+        <p>I'm in my first year of Software Engineering at Waterloo. Before this, I spent most of school building things meant to outlast me: the school's first student clubs, a school-wide rulebook, its first Model UN, and a timetable used by 1,500 people. I'm now putting that same habit into software and design.</p>
+        <p>I grew up around my family's orchards in Kashmir, which is where a couple of my projects come from too.</p>
+      </section>
+
+      <section id="now">
+        <p class="label">Now</p>
+        <ul class="plain">
+          <li>First year of Software Engineering at Waterloo, on the co-op stream.</li>
+          <li>Building <span class="accent-word">The Kashmir Timeline</span>, a 3D museum of Kashmir's history and landmarks.</li>
+          <li>Sketching a daily web game built around a quick estimation challenge.</li>
+        </ul>
+      </section>
+
+      <section id="work">
+        <p class="label">Selected work</p>
+        <div class="row">
+          <div class="meta">2026 · live</div>
+          <div>
+            <h3><a href="https://thekashmirtimeline.com" target="_blank" rel="noopener">The Kashmir Timeline</a> <span class="ext">&#8599;</span></h3>
+            <p>A first-person, walkable 3D museum of Kashmir's history and landmarks, made for people who will never get to visit. Built as a fast static site so it holds up under real traffic.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="meta">School</div>
+          <div>
+            <h3>School-wide timetable redesign</h3>
+            <p>Worked out why a timetable used by 1,500 students kept failing, drafted a full replacement, and refined it over four months with administration until it was adopted school-wide.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="meta">In progress</div>
+          <div>
+            <h3>Daily web game</h3>
+            <p>A daily challenge in the spirit of Wordle and Human Benchmark. Early days.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="leadership">
+        <p class="label">Leadership &amp; school</p>
+        <div class="row">
+          <div class="meta">President</div>
+          <div>
+            <h3>Student Council</h3>
+            <p>Founded the school's first five student-led clubs, wrote a school-wide rulebook so discipline followed real policy, and ran the school's first Model UN as Secretary General.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="meta">Founder</div>
+          <div>
+            <h3>Future Pioneers Forum</h3>
+            <p>Built the approval and handover process every student club now follows, so clubs stopped collapsing whenever their founders left.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="meta">Founder</div>
+          <div>
+            <h3>School Math Society</h3>
+            <p>Ran weekly tutoring built around different ways into a problem, and trained juniors to keep the sessions running after each cohort moved on.</p>
+          </div>
+        </div>
+        <div class="row">
+          <div class="meta">Also</div>
+          <div>
+            <h3>A few more things</h3>
+            <p>Captain of varsity basketball and soccer. A Levels: A in Mathematics, Physics and Chemistry. iCode Global Hackathon finalist.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="interests">
+        <p class="label">Interested in</p>
+        <p>Web and app design with a clean, minimal feel. Building products that are genuinely useful, and the craft of keeping software simple.</p>
+        <p>Away from the screen, I train calisthenics and post it at <a class="body-link" href="https://kashmiristhenics.com" target="_blank" rel="noopener">Kashmiristhenics</a>.</p>
+      </section>
+
+      <section id="links">
+        <p class="label">Elsewhere</p>
+        <ul class="links">
+          <li><a href="mailto:hello@yahyahashme.com"><span>Email</span><span class="where">hello@yahyahashme.com</span></a></li>
+          <li><a href="https://github.com/yahyahashme" target="_blank" rel="noopener"><span>GitHub</span><span class="where">code &#8599;</span></a></li>
+          <li><a href="https://x.com/yahyahashme" target="_blank" rel="noopener"><span>X</span><span class="where">@yahyahashme &#8599;</span></a></li>
+          <li><a href="https://linkedin.com/in/yahyahashme" target="_blank" rel="noopener"><span>LinkedIn</span><span class="where">the formal one &#8599;</span></a></li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="wrap">
+      <footer>Waterloo, ON</footer>
+    </div>
+  </main>
+
+  <script>
+    var root = document.documentElement;
+    var btn = document.getElementById('themeToggle');
+    var meta = document.querySelector('meta[name="theme-color"]');
+    function label() {
+      var dark = root.getAttribute('data-theme') === 'dark';
+      btn.textContent = dark ? 'Light' : 'Dark';
+      btn.setAttribute('aria-label', 'Switch to ' + (dark ? 'light' : 'dark') + ' theme');
+      meta.setAttribute('content', dark ? '#0b0e14' : '#f6f7f9');
+    }
+    label();
+    btn.addEventListener('click', function () {
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('yh-theme', next); } catch (e) {}
+      label();
+    });
+  </script>
+</body>
+</html>
