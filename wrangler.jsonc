@@ -1,0 +1,9 @@
+// Cloudflare Worker that serves yahyahashme.com. Deploy with: npx wrangler deploy
+{
+  "name": "yahyahashme",
+  "compatibility_date": "2026-06-27",
+  // Serve the repo root as static files; .assetsignore keeps everything but the site out.
+  "assets": { "directory": "." },
+  "workers_dev": true,
+  "preview_urls": false
+}
