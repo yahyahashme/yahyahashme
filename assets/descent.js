@@ -79,6 +79,7 @@
     var lockup = $('lockup');
     Hs = (lockup && lockup.offsetHeight) || window.innerHeight;
     for (var k in S) tops[k] = docTop(S[k]);
+    if (pin.end > pin.start) tops.work = pin.start; // while pinned the section is fixed; its place is the pin start
     var maxScroll = Math.max(1, doc.scrollHeight - window.innerHeight);
     keys = [
       [0, TOP_ALT],
@@ -314,8 +315,8 @@
   function makeClouds() {
     var r = rng(77), sprites = [], i, j;
     for (i = 0; i < 6; i++) {
-      var sw = 320, sh = 160, c = makeCanvas(sw, sh), g = c.getContext('2d');
-      var puffs = 9 + Math.floor(r() * 6);
+      var sw = 256, sh = 128, c = makeCanvas(sw, sh), g = c.getContext('2d');
+      var puffs = 8 + Math.floor(r() * 5);
       for (j = 0; j < puffs; j++) {
         var cx = sw * (.12 + .76 * r()), cy = sh * (.42 + .3 * r()), rad = sh * (.14 + .22 * r());
         var rg = g.createRadialGradient(cx, cy, 0, cx, cy, rad);
@@ -384,7 +385,8 @@
         base: hex(tr[6]), treeColor: hex(tr[7]), treeDeep: hex(tr[8]) });
     }
     add({ kind: 'shore', anchor: 'lake', f: 1, at: .28, depth: .9, band: 2, imgH: h * .12, bodyH: 0, seed: 505, base: hex('#3a2b1e'), shoreline: true });
-    clouds = makeClouds();
+    clouds = null;
+    layers.push({ kind: 'clouds', anchor: 'hero', f: 1.3, at: -2.0, depth: .6, band: 1, imgH: 3.2 * h, bodyH: 0, imgW: Wl, virtual: true });
     var r = rng(9);
     glitter = []; for (i = 0; i < 70; i++) glitter.push({ gx: (r() + r() + r() - 1.5) / 1.5, d: r(), len: 3 + r() * 11, a: .15 + r() * .4, ph: r() * 6.28, sp: 1.5 + r() * 3 });
     pads = []; for (i = 0; i < 7; i++) pads.push({ x: .03 + r() * .24, y: 1 - r() * .22, rx: 14 + r() * 22, rot: r() * 6.28, ph: r() * 6.28 });
@@ -394,6 +396,7 @@
   }
 
   function renderLayer(L) {
+    if (L.kind === 'clouds') { clouds = makeClouds(); L.img = true; return; }
     var area = L.imgW * L.imgH, ld = Math.min(dpr, Math.sqrt(2.2e6 / area), L.depth < .35 ? 1 : L.depth < .7 ? 1.5 : 2);
     var c = makeCanvas(L.imgW * ld, L.imgH * ld), ctx = c.getContext('2d');
     ctx.scale(ld, ld);
@@ -416,19 +419,29 @@
     renderQueue = layers.filter(function (L) { return !L.img; });
     pumpQueue(true);
   }
+  function onScreenNow(L, vs) { var y = layerY(L, vs); return y < H && y + L.imgH + L.bodyH > 0; }
+  function pendingOnScreen() {
+    var vs = vScrollOf(currentScroll());
+    for (var i = 0; i < renderQueue.length; i++) if (onScreenNow(renderQueue[i], vs)) return true;
+    return false;
+  }
+  var pumpScheduled = false;
   function pumpQueue(sync) {
+    pumpScheduled = false;
     if (!renderQueue.length) return;
-    var cur = currentScroll(), vs = vScrollOf(cur), start = performance.now();
-    renderQueue.sort(function (a, b) { return layerY(a, vs) - layerY(b, vs); });
-    // whatever is on screen now renders immediately; the rest trickles in during idle time
-    while (renderQueue.length) {
-      var L = renderQueue[0], y = layerY(L, vs), onScreen = y < H && y + L.imgH + L.bodyH > 0;
-      if (sync && !onScreen && performance.now() - start > 12) break;
-      renderLayer(L); renderQueue.shift();
-      dirty = true;
-      if (!sync || !onScreen) break;
+    var vs = vScrollOf(currentScroll()), start = performance.now();
+    renderQueue.sort(function (a, b) { return onScreenNow(b, vs) - onScreenNow(a, vs) || layerY(a, vs) - layerY(b, vs); });
+    // on-screen layers render a couple per frame; the rest trickle in during idle time
+    var budget = sync ? 10 : 6;
+    do {
+      renderLayer(renderQueue[0]); renderQueue.shift(); dirty = true;
+    } while (renderQueue.length && onScreenNow(renderQueue[0], vs) && performance.now() - start < budget);
+    if (renderQueue.length && !pumpScheduled) {
+      pumpScheduled = true;
+      if (pendingOnScreen()) requestAnimationFrame(function () { pumpQueue(true); });
+      else idle(function () { pumpQueue(false); });
     }
-    if (renderQueue.length) idle(function () { pumpQueue(false); });
+    if (MOTION && !doc.classList.contains('world-ready')) tick();
   }
 
   /* ---- placement ---- */
@@ -485,13 +498,14 @@
     return smooth(1.55, 1.1, u) * (1 - smooth(.78, .22, u)); // rises into the deck, holds, clears
   }
   function drawClouds(ctx, vs, t, w, h) {
+    if (!clouds) return false;
     var a = anchorTop('hero'), cf = MOTION ? 1.3 : 1, base = (a - vs) * cf, any = false;
     for (var i = 0; i < clouds.length; i++) {
       var c = clouds[i], sw = 320 * c.sc * Math.max(.45, w / 1440), sh = sw * .5;
       var y = (0.5 - c.u * cf) * Hs + base - sh * .5;
       if (y > h || y + sh < 0) continue;
       any = true;
-      var x = ((c.x * w + t * c.v) % (w + sw)) - sw;
+      var x = ((c.x * w + (a - vs) * c.v * .06) % (w + sw)) - sw;
       if (x < -sw) x += w + sw;
       ctx.globalAlpha = c.a; ctx.drawImage(c.s, x, y, sw, sh);
     }
@@ -499,7 +513,7 @@
     return any;
   }
 
-  var raft = $('raft');
+  var raft = $('raft'), raftRect = null, raftRead = 0;
   function drawWater(ctx, canvas, wl, pal, t, sunX, sunY, w, h, animate) {
     // everything above the waterline is mirrored into it in thin, wavering slices
     var waterH = h - wl; if (waterH <= 2) return;
@@ -568,7 +582,9 @@
     }
     // the contact raft casts its light on the water
     if (raft && animate) {
-      var rc = raft.getBoundingClientRect();
+      var nowMs = performance.now();
+      if (!raftRect || nowMs - raftRead > 250) { raftRect = raft.getBoundingClientRect(); raftRead = nowMs; }
+      var rc = raftRect;
       if (rc.bottom > wl && rc.top < h) {
         var rg = ctx.createLinearGradient(0, rc.bottom, 0, rc.bottom + rc.height * .5);
         rg.addColorStop(0, 'rgba(44,30,16,.22)'); rg.addColorStop(1, 'rgba(44,30,16,0)');
@@ -600,7 +616,7 @@
         hazeFill(ctx, pal, w, h, bandNow === 0 ? .55 : .3, skyAt);
         bandNow = L.band;
       }
-      if (!L.img) continue;
+      if (!L.img || L.virtual) continue;
       var y = layerY(L, vs), x = -(pp * (L.hx || 0) * pinDx);
       if (y > h || y + L.imgH + L.bodyH < 0) continue;
       drawLayer(ctx, L, x, y, pal, w);
@@ -616,8 +632,10 @@
     }
     var waterOn = false;
     if (waterline >= 0 && waterline < h) { drawWater(ctx, canvas, Math.round(waterline), pal, t, sunX, sunY, w, h, animate); waterOn = true; }
-    return cloudsOn || waterOn;
+    lastFrame = waterOn ? { wl: Math.round(waterline), pal: pal, sunX: sunX, sunY: sunY } : null;
+    return waterOn;
   }
+  var lastFrame = null;
 
   /* ================= MOTION MODE: one fixed canvas ================= */
   var canvas = $('world'), ctx = null, dirty = true, animating = false, rafId = 0, scrollY = 0, lastT = 0;
@@ -635,10 +653,14 @@
     var t = now / 1000;
     var alt = altitudeAt(scrollY);
     setInstrument(alt);
-    if (dirty || animating) {
+    if (dirty) {
       dirty = false;
       animating = renderWorld(ctx, canvas, W, H, scrollY, t, true);
-      if (!doc.classList.contains('world-ready')) doc.classList.add('world-ready');
+      if (!doc.classList.contains('world-ready') && !pendingOnScreen()) doc.classList.add('world-ready');
+    } else if (animating && lastFrame) {
+      // only the water moves: everything above the waterline is still on the canvas
+      ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
+      drawWater(ctx, canvas, lastFrame.wl, lastFrame.pal, t, lastFrame.sunX, lastFrame.sunY, W, H, true);
     }
     if (animating) tick();
   }
@@ -709,7 +731,7 @@
     setInstrument(altitudeAt(currentScroll()));
   }
   window.addEventListener('resize', onResize);
-  window.addEventListener('load', relayout);
+  window.addEventListener('load', function () { measure(); if (MOTION) onScroll(); });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { measure(); onScroll(); });
 
   /* ================= CHOREOGRAPHY: Lenis + ScrollTrigger ================= */
@@ -768,16 +790,17 @@
         e.preventDefault();
         if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
         if (id === '#main') { lenis.scrollTo(0, { immediate: true }); el.focus({ preventScroll: true }); return; }
-        lenis.scrollTo(el, { duration: 1.6, easing: function (t) { return 1 - Math.pow(1 - t, 3); }, onComplete: function () { el.focus({ preventScroll: true }); } });
+        var target = (el === S.work && pinST) ? pinST.start : el;
+        lenis.scrollTo(target, { duration: 1.6, easing: function (t) { return 1 - Math.pow(1 - t, 3); }, onComplete: function () { el.focus({ preventScroll: true }); } });
         if (history.replaceState) history.replaceState(null, '', id);
       });
     });
 
     ST.addEventListener('refresh', function () { measure(); dirty = true; tick(); });
-    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { ST.refresh(); });
-    window.addEventListener('load', function () { ST.refresh(); });
+    // ScrollTrigger refreshes itself on load; only a late font swap needs another pass
+    if (document.fonts && document.fonts.status !== 'loaded') document.fonts.ready.then(function () { if (document.readyState === 'complete') ST.refresh(); });
   }
-  choreograph();
+  if (MOTION) requestAnimationFrame(function () { setTimeout(choreograph, 0); });
 
   window.__descent = {
     altitudeAt: altitudeAt, measure: measure, relayout: relayout, keys: function () { return keys; },

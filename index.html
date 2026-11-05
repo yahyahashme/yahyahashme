@@ -235,11 +235,14 @@
     .ledger li { display: grid; grid-template-columns: 6.4rem minmax(0, 1fr); gap: .6rem; align-items: baseline; }
     .ledger .num { font-size: 1.75rem; }
     .ledger .what { margin-top: 0; max-width: none; }
-    .alt { top: max(.9rem, env(safe-area-inset-top)); bottom: auto; padding: .5rem .65rem .45rem; }
     .alt-digits { font-size: 1.25rem; }
     .alt-tape { height: 3.4rem; }
     .foot { margin-top: 3rem; padding-bottom: 5.5rem; }
     html.motion .track { bottom: 11svh; }
+  }
+  /* Up to tablet widths the altimeter sits top-left, clear of the card track. */
+  @media (max-width: 1024px) {
+    .alt { top: max(.9rem, env(safe-area-inset-top)); bottom: auto; padding: .5rem .65rem .45rem; }
     html.motion .valley-head { padding-top: 17svh; }
   }
 
