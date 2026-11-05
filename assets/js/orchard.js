@@ -233,7 +233,7 @@
     var keep = Math.min(1, budget.canopy / Math.max(1, visible));
     if (keep < 1) anchors = anchors.filter(function () { return rnd() < keep; });
     anchors.sort(function (a, b) { return a.x - b.x; });
-    anchors.forEach(function (a) { a.sDet = 2.55 + a.q * 0.95; });
+    anchors.forEach(function (a) { a.sDet = 2.55 + (0.35 + 0.65 * a.phase) * a.q * 0.95 + a.phase * 0.25; });
     segs.sort(function (a, b) { return Math.min(a.x0, a.x1) - Math.min(b.x0, b.x1); });
   }
 
@@ -338,7 +338,7 @@
     var p = a.phase;
     var bl = a.bloom ? smooth(0.58 + p * 0.22, 0.98 + p * 0.12, S) * (1 - smooth(1.3 + p * 0.15, 1.6 + p * 0.1, S)) : 0;
     var lf = smooth(1.28 + p * 0.25, 1.78 + p * 0.2, S);
-    var col = 0.33 * smooth(1.4, 1.95, S) + 0.67 * smooth(2.12 + p * 0.45, 2.85 + p * 0.45, S) * (0.75 + 0.25 * a.q) + a.cj * lf;
+    var col = 0.33 * smooth(1.4, 1.95, S) + (0.24 + 0.43 * a.q) * smooth(2.12 + p * 0.45, 2.85 + p * 0.45, S) + a.cj * lf;
     return { bl: bl, lf: lf, col: clamp(col, 0, 1) };
   }
 
@@ -359,7 +359,7 @@
   }
   function detach(a, now) {
     a.det = true; sceneDirty = true;
-    var st = leafState(a, S), b = clamp(Math.round(st.col * (NB - 1)), 0, NB - 1);
+    var st = leafState(a, S), b = clamp(Math.round(Math.max(0.52, st.col) * (NB - 1)), 0, NB - 1);
     fallers.push({
       x: a.x + offX, y: a.y, vx: (Math.random() - 0.5) * 20, vy: 10 + Math.random() * 20, term: 60 + Math.random() * 60,
       rot: a.rot, rv: (Math.random() - 0.5) * 1.6, fr: 1.2 + Math.random() * 1.6, ph: Math.random() * 6.283, amp: 18 + Math.random() * 30,
@@ -570,7 +570,7 @@
 
   function snowfall(dt, w, t) {
     var target = Math.round(budget.snow * w * quality);
-    while (flakes.length < target) flakes.push({ x: Math.random() * vw, y: -8 - Math.random() * H * 0.3, vy: 20 + Math.random() * 42, ph: Math.random() * 6.283, r: 1 + Math.random() * 2.2, a: 0 });
+    while (flakes.length < target) flakes.push({ x: Math.random() * vw, y: -8 - Math.random() * H * 0.3, vy: 20 + Math.random() * 42, ph: Math.random() * 6.283, r: 0.8 + Math.random() * 1.7, a: 0 });
     if (!flakes.length) return;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     for (var pass = 0; pass < 2; pass++) {
@@ -585,11 +585,11 @@
           if (f.y > H + 8) { if (dying) { flakes.splice(i, 1); continue; } f.y = -8; f.x = Math.random() * vw; }
           if (f.x < -8) f.x = vw + 8; else if (f.x > vw + 8) f.x = -8;
         }
-        var r = pass === 0 ? f.r * 2.1 : f.r;
+        var r = pass === 0 ? f.r * 1.9 : f.r;
         if (f.a < 0.999) { if (Math.random() > f.a) continue; }
         ctx.moveTo(f.x + r, f.y); ctx.arc(f.x, f.y, r, 0, 6.2832);
       }
-      ctx.fillStyle = pass === 0 ? 'rgba(236,243,252,0.22)' : 'rgba(246,250,255,0.82)';
+      ctx.fillStyle = pass === 0 ? 'rgba(236,243,252,0.16)' : 'rgba(246,250,255,0.72)';
       ctx.fill();
     }
   }

@@ -132,6 +132,7 @@
   .bough { position: absolute; top: 0; left: 0; width: 100%; height: auto; max-height: 34vh; overflow: visible; pointer-events: none; }
   html.is-live .bough { display: none; }
   html:not(.is-live) .season--spring, html:not(.is-live) .season--summer, html:not(.is-live) .season--autumn { padding-top: calc(min(19vw, 34vh) + 3rem); }
+  html:not(.is-live) .season--winter:not(.season--end), html:not(.is-live) .season--spring, html:not(.is-live) .season--summer, html:not(.is-live) .season--autumn { padding-bottom: 14vh; }
 
   /* ---------- Winter: the name ---------- */
   .season--winter { padding-bottom: 42vh; }
@@ -245,6 +246,7 @@
     .brand { font-size: 1.05rem; }
     .hero { padding-bottom: 12vh; }
     .season--winter { padding-bottom: 34vh; }
+    .season--end { padding-bottom: 0; }
     .season--spring { padding-bottom: 30vh; }
     .season--autumn { padding: 20vh 0 26vh; }
   }
@@ -368,7 +370,7 @@
   <main id="main" tabindex="-1">
 
     <section class="season season--winter" id="top" aria-labelledby="name">
-      <svg class="bough" aria-hidden="true"><use href="#bough"/></svg>
+      <svg class="bough" viewBox="0 0 1200 230" aria-hidden="true"><use href="#bough"/></svg>
       <div class="wrap hero">
         <p class="season-mark"><svg aria-hidden="true"><use href="#chinar"/></svg>Winter</p>
         <h1 class="name" id="name"><span class="sr-only">Yahya Hashme</span><span class="frost" aria-hidden="true">Yahya Hashme</span></h1>
@@ -378,7 +380,7 @@
     </section>
 
     <section class="season season--spring" id="about" aria-labelledby="about-h">
-      <svg class="bough" aria-hidden="true"><use href="#bough"/></svg>
+      <svg class="bough" viewBox="0 0 1200 230" aria-hidden="true"><use href="#bough"/></svg>
       <div class="wrap">
         <p class="season-mark"><svg aria-hidden="true"><use href="#chinar"/></svg>Spring</p>
         <p class="hero-line" id="intro"><span class="sr-only">I build useful things for the people around me.</span><span class="words" aria-hidden="true">I build useful things for the people around me.</span></p>
@@ -415,7 +417,7 @@
     </section>
 
     <section class="season season--summer" id="work" aria-labelledby="work-h">
-      <svg class="bough" aria-hidden="true"><use href="#bough"/></svg>
+      <svg class="bough" viewBox="0 0 1200 230" aria-hidden="true"><use href="#bough"/></svg>
       <div class="stage" id="stage">
         <div class="stage__pin">
           <div class="wrap stage__head">
@@ -486,7 +488,7 @@
     </section>
 
     <section class="season season--autumn" id="offscreen" aria-labelledby="off-h">
-      <svg class="bough" aria-hidden="true"><use href="#bough"/></svg>
+      <svg class="bough" viewBox="0 0 1200 230" aria-hidden="true"><use href="#bough"/></svg>
       <div class="wrap">
         <p class="season-mark"><svg aria-hidden="true"><use href="#chinar"/></svg>Autumn</p>
         <ul class="ledger" aria-label="Built so far">
@@ -502,7 +504,7 @@
     </section>
 
     <section class="season season--winter season--end" id="contact" aria-labelledby="contact-h">
-      <svg class="bough" aria-hidden="true"><use href="#bough"/></svg>
+      <svg class="bough" viewBox="0 0 1200 230" aria-hidden="true"><use href="#bough"/></svg>
       <div class="wrap">
         <div data-reveal>
           <p class="season-mark"><svg aria-hidden="true"><use href="#chinar"/></svg>Winter</p>
