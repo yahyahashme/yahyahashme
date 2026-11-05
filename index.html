@@ -75,6 +75,9 @@
   html.world-ready .world { opacity: 1; }
   html.calm .world { display: none; }
 
+  html.lenis, html.lenis body { height: auto; }
+  .lenis.lenis-smooth { scroll-behavior: auto !important; }
+  .lenis.lenis-stopped { overflow: hidden; }
   main { position: relative; z-index: 1; }
   main:focus { outline: none; }
 
@@ -106,7 +109,7 @@
 
   /* ---------- 5,000 m: peaks ---------- */
   .z-peaks { padding: 0 var(--gutter); min-height: 230vh; min-height: 230svh; align-content: start; }
-  .lockup { min-height: 100vh; min-height: 100svh; display: grid; align-content: center; justify-items: center; text-align: center; padding-bottom: 8vh; }
+  .lockup { min-height: 100vh; min-height: 100svh; display: grid; align-content: center; justify-items: center; text-align: center; padding-bottom: 8vh; will-change: transform, opacity; }
   .leaf { width: clamp(1.6rem, 2.6vw, 2.2rem); height: auto; margin-bottom: 1.2rem; fill: var(--ink); opacity: .9; }
   .leaf path + path { fill: none; stroke: var(--ink); stroke-width: 7; stroke-linecap: round; }
   .name { font-family: var(--display); font-weight: 300; font-size: clamp(3rem, 10.5vw, 8.6rem); line-height: .98; letter-spacing: -.04em; margin: 0; text-wrap: balance; }
@@ -237,6 +240,7 @@
     .alt-tape { height: 3.4rem; }
     .foot { margin-top: 3rem; padding-bottom: 5.5rem; }
     html.motion .track { bottom: 11svh; }
+    html.motion .valley-head { padding-top: 17svh; }
   }
 
   /* ---------- Calm: reduced motion keeps the palette, loses the parallax ---------- */

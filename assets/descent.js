@@ -403,7 +403,7 @@
     else if (L.kind === 'shore') renderShore(L, ctx, L.imgW, L.imgH);
     L.img = c;
     L.bodyColor = L.kind === 'ridge' ? mixc(L.base, L.shade, .38) : L.kind === 'hills' ? mixc(L.base, L.shade, .3) : L.base;
-    L.bodyStops = L.horizon ? [.12, .35] : L.kind === 'hills' ? [.12, .32] : L.kind === 'terrace' ? [.25, .55] : [.2, .5];
+    L.bodyStops = L.horizon ? [.08, .24] : L.kind === 'hills' ? [.12, .32] : L.kind === 'terrace' ? [.25, .55] : [.2, .5];
     if (L.depth < .7) { // a soft copy for depth of field
       var s = makeCanvas(Math.max(8, L.imgW * .25), Math.max(8, L.imgH * .25)), sctx = s.getContext('2d');
       sctx.drawImage(c, 0, 0, s.width, s.height); L.soft = s;
@@ -712,8 +712,76 @@
   window.addEventListener('load', relayout);
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { measure(); onScroll(); });
 
+  /* ================= CHOREOGRAPHY: Lenis + ScrollTrigger ================= */
+  var lenis = null, pinST = null;
+  function choreograph() {
+    if (!MOTION || !window.gsap || !window.ScrollTrigger || !window.Lenis) return;
+    var gsap = window.gsap, ST = window.ScrollTrigger;
+    gsap.registerPlugin(ST);
+    ST.config({ ignoreMobileResize: true });
+
+    lenis = new window.Lenis({ lerp: 0.09, smoothWheel: true, syncTouch: false, anchors: false, autoRaf: false });
+    lenis.on('scroll', ST.update);
+    gsap.ticker.add(function (time) { lenis.raf(time * 1000); });
+    gsap.ticker.lagSmoothing(0);
+
+    // 5,000 m: the name rises more slowly than the page and is gone before the cloud deck
+    var lockup = $('lockup');
+    gsap.timeline({ scrollTrigger: { trigger: S.peaks, start: 'top top', end: function () { return '+=' + Hs; }, scrub: true, invalidateOnRefresh: true } })
+      .to(lockup, { y: function () { return Hs * 0.35; }, ease: 'none', duration: 1 }, 0)
+      .to(lockup, { opacity: 0, ease: 'none', duration: .5 }, .45);
+
+    // the hero line appears on the other side of the cloud
+    gsap.fromTo(S.hero.querySelector('.zone-inner'), { opacity: 0, y: 48 }, { opacity: 1, y: 0, ease: 'none',
+      scrollTrigger: { trigger: S.hero, start: 'top 82%', end: 'top 30%', scrub: true } });
+
+    // text blocks sit a little deeper in the scene than the page itself
+    [S.about, S.now, S.shore].forEach(function (sec) {
+      var inner = sec.querySelector('.zone-inner');
+      gsap.fromTo(inner, { y: function () { return Hs * .06; } }, { y: function () { return -Hs * .06; }, ease: 'none',
+        scrollTrigger: { trigger: sec, start: 'top bottom', end: 'bottom top', scrub: true, invalidateOnRefresh: true } });
+    });
+
+    // 1,700 m: the valley holds while the cards walk along the terraces
+    var track = $('track');
+    var dist = function () { return Math.max(0, track.scrollWidth - window.innerWidth); };
+    pinST = gsap.to(track, { x: function () { return -dist(); }, ease: 'none',
+      scrollTrigger: { trigger: S.work, start: 'top top', end: function () { return '+=' + dist(); }, pin: true, scrub: true, anticipatePin: 1, invalidateOnRefresh: true,
+        onRefresh: function (st) { pin.start = st.start; pin.end = st.end; } } }).scrollTrigger;
+    // keyboard focus inside the pinned track scrolls the page to that card
+    track.addEventListener('focusin', function (e) {
+      var card = e.target.closest ? e.target.closest('.card') : null;
+      if (!card || !pinST || !dist()) return;
+      var p = clamp((card.offsetLeft + card.offsetWidth / 2 - window.innerWidth / 2) / dist(), 0, 1);
+      lenis.scrollTo(pinST.start + p * (pinST.end - pinST.start), { immediate: true });
+    });
+
+    // 1,585 m: the raft rides the water
+    if (raft) gsap.to(raft, { y: 5, duration: 2.8, ease: 'sine.inOut', yoyo: true, repeat: -1,
+      scrollTrigger: { trigger: S.lake, start: 'top bottom', toggleActions: 'play pause resume pause' } });
+
+    // anchors travel the descent; the skip link jumps
+    Array.prototype.forEach.call(document.querySelectorAll('a[href^="#"]'), function (a) {
+      a.addEventListener('click', function (e) {
+        var id = a.getAttribute('href'), el = id.length > 1 && document.querySelector(id);
+        if (!el) return;
+        e.preventDefault();
+        if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1');
+        if (id === '#main') { lenis.scrollTo(0, { immediate: true }); el.focus({ preventScroll: true }); return; }
+        lenis.scrollTo(el, { duration: 1.6, easing: function (t) { return 1 - Math.pow(1 - t, 3); }, onComplete: function () { el.focus({ preventScroll: true }); } });
+        if (history.replaceState) history.replaceState(null, '', id);
+      });
+    });
+
+    ST.addEventListener('refresh', function () { measure(); dirty = true; tick(); });
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { ST.refresh(); });
+    window.addEventListener('load', function () { ST.refresh(); });
+  }
+  choreograph();
+
   window.__descent = {
     altitudeAt: altitudeAt, measure: measure, relayout: relayout, keys: function () { return keys; },
+    pin: function () { return pin; }, lenis: function () { return lenis; },
     setPin: function (start, end) { pin.start = start; pin.end = end; measure(); dirty = true; tick(); },
     pinDistance: function () { return pinDx; },
     palette: palette, layers: function () { return layers; }, markDirty: function () { dirty = true; tick(); }
