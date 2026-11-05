@@ -129,12 +129,13 @@
   html.is-live .season { background: transparent; }
 
   /* Static ornament: one bough per season, leaves coloured by the season. Hidden in live mode (the canvas carries the tree). */
-  .bough { display: block; width: 100%; height: auto; max-height: 34vh; overflow: visible; }
+  .bough { position: absolute; top: 0; left: 0; width: 100%; height: auto; max-height: 34vh; overflow: visible; pointer-events: none; }
   html.is-live .bough { display: none; }
+  html:not(.is-live) .season--spring, html:not(.is-live) .season--summer, html:not(.is-live) .season--autumn { padding-top: calc(min(19vw, 34vh) + 3rem); }
 
   /* ---------- Winter: the name ---------- */
   .season--winter { padding-bottom: 42vh; }
-  .hero { min-height: 100svh; display: grid; align-content: end; padding-bottom: 14vh; }
+  .hero { min-height: 100vh; min-height: 100svh; display: grid; align-content: end; padding-bottom: 14vh; }
   .hero .season-mark { margin-bottom: 1.6rem; }
   .name {
     font-size: clamp(3.1rem, 10.5vw, 8.2rem); line-height: .98; letter-spacing: -.02em; white-space: nowrap;
@@ -214,7 +215,7 @@
 
   /* ---------- Winter again: Contact ---------- */
   .season--end { padding-bottom: 0; }
-  .season--end .wrap { min-height: 100svh; display: grid; align-content: end; padding-bottom: 2.4rem; }
+  .season--end .wrap { min-height: 100vh; min-height: 100svh; display: grid; align-content: end; padding-bottom: 2.4rem; }
   .season--end .season-mark { margin-bottom: 1.6rem; }
   .links { list-style: none; padding: 0; margin: 0; max-width: 34rem; }
   .links li { border-top: 1px solid var(--rule); }
@@ -251,7 +252,7 @@
   /* ---------- Live mode: the pinned Work orchard ---------- */
   html.has-stage .season--summer { padding: 0; }
   html.has-stage .stage { height: var(--stage-h, 300svh); }
-  html.has-stage .stage__pin { position: sticky; top: 0; height: 100svh; overflow: hidden; }
+  html.has-stage .stage__pin { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
   html.has-stage .stage__head { position: absolute; left: 0; right: 0; top: clamp(5.2rem, 11vh, 7rem); z-index: 2; pointer-events: none; }
   html.has-stage .stage__head h2 { margin: .4rem 0 0; font-size: clamp(1.6rem, 3vw, 2.4rem); }
   html.has-stage .row { position: absolute; inset: 0; display: block; margin: 0; padding: 0; max-width: none; will-change: transform; }
@@ -297,8 +298,10 @@
     html.js .name .frost { opacity: 1; filter: none; }
   }
 </style>
-<script defer src="assets/js/vendor.min.js?v=1"></script>
-<script defer src="assets/js/orchard.js?v=1"></script>
+<script defer src="assets/js/vendor/gsap-3.15.1.min.js"></script>
+<script defer src="assets/js/vendor/ScrollTrigger-3.15.1.min.js"></script>
+<script defer src="assets/js/vendor/lenis-1.3.27.min.js"></script>
+<script defer src="assets/js/orchard.js?v=2"></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>

@@ -135,25 +135,26 @@
 
   /* ---------- State ---------- */
   var vw = 0, vh = 0, dpr = 1, W = 0, H = 0, mobile = false, budget = {};
-  var segs = [], anchors = [], hangs = [], branchCache = null, cdpr = 1;
+  var segs = [], anchors = [], hangs = [];
   var sprites = { leaf: [], lit: [], blossom: [], snow: [] };
   var fallers = [], landed = [], pile = [], ground = null, gctx = null, groundDirty = false;
   var flakes = [];
-  var S = 0, lastS = 0, offX = 0, stage = null, rowX = 0;
+  var S = 0, lastS = 0, offX = 0, stage = null, rowX = 0, buildToken = 0;
+  var idle = window.requestIdleCallback ? function (f) { window.requestIdleCallback(f, { timeout: 1500 }); } : function (f) { setTimeout(f, 80); };
   var knots = [];
   var wind = 0, gust = 0, time = 0, lastT = 0, idleSince = 0, lastScroll = 0, ambientT = 0;
   var sunCache = { key: '', grad: null };
   var meta = $('meta[name="theme-color"]');
 
   /* ---------- Tree ---------- */
-  function spineBase() { return clamp(vh * 0.16, 100, 150); }
+  function spineBase() { return mobile ? clamp(vh * 0.13, 78, 110) : clamp(vh * 0.16, 100, 150); }
   function spineY(x) { return spineBase() + Math.sin(x / 430) * 24 + Math.sin(x / 165 + 1.3) * 9 + Math.sin(x / 61 + 0.4) * 3; }
   function upperY(x) { return 30 + Math.sin(x / 310 + 2) * 20 + Math.sin(x / 120) * 6; }
 
   function buildTree() {
     var rnd = mulberry32(2024091 + Math.round(W / 10));
     segs = []; anchors = [];
-    var trunkL = vw * 0.045, trunkR = W - vw * 0.12;
+    var trunkL = mobile ? -6 : vw * 0.045, trunkR = mobile ? W + 6 : W - vw * 0.12;
     function spineW(x) { var d = Math.min(Math.abs(x - trunkL), Math.abs(x - trunkR)); return (7 + 16 * Math.max(0, 1 - d / (vw * 0.95))) * (0.84 + 0.32 * Math.abs(Math.sin(x / 140 + 0.7))); }
     var lenScale = clamp(vh / 820, 0.72, 1.1) * (mobile ? 0.85 : 1);
 
@@ -200,7 +201,7 @@
       for (var ux = r[0]; ux < r[1]; ux += 44) {
         var um = ux + 22, ue = Math.min(r[1], ux + 44), tw = 3 + 4 * Math.sin((ux - r[0]) / (r[1] - r[0]) * Math.PI);
         seg(ux, upperY(ux), um, upperY(um) + (rnd() - 0.5) * 3, ue, upperY(ue), tw, 0);
-        if (rnd() < 0.45) grow(um, upperY(um), 0.55 + rnd() * 1.1 + (rnd() < 0.5 ? 0 : 0.9), (50 + rnd() * 50) * lenScale, 3, 1, 3);
+        if (rnd() < 0.3) grow(um, upperY(um), 0.55 + rnd() * 1.1 + (rnd() < 0.5 ? 0 : 0.9), (50 + rnd() * 50) * lenScale * (mobile ? 0.7 : 1), 3, 1, 3);
       }
     });
     // Two trunks: one by the first winter, one by the last.
@@ -216,7 +217,7 @@
       var up = rnd() < 0.66, right = rnd() < 0.5, y = spineY(sx);
       var ang = up ? -(0.55 + rnd() * 0.85) : (0.4 + rnd() * 0.45);
       if (!right) ang = up ? -Math.PI + (0.55 + rnd() * 0.85) : Math.PI - (0.4 + rnd() * 0.45);
-      var len = (up ? 95 + rnd() * 85 : 58 + rnd() * 48) * lenScale;
+      var len = (up ? 95 + rnd() * 85 : (58 + rnd() * 48) * (mobile ? 0.62 : 1)) * lenScale;
       grow(sx, y, ang, len, Math.max(3.6, spineW(sx) * (up ? 0.5 : 0.36)), 0, up ? 4 : 3);
       sx += 105 + rnd() * 95;
     }
@@ -234,20 +235,6 @@
     anchors.sort(function (a, b) { return a.x - b.x; });
     anchors.forEach(function (a) { a.sDet = 2.55 + a.q * 0.95; });
     segs.sort(function (a, b) { return Math.min(a.x0, a.x1) - Math.min(b.x0, b.x1); });
-    paintBranches();
-  }
-
-  function paintBranches() {
-    cdpr = Math.min(dpr, 1.5);
-    branchCache = document.createElement('canvas');
-    branchCache.width = Math.ceil((W + 180) * cdpr); branchCache.height = Math.ceil((H + 160) * cdpr);
-    var g = branchCache.getContext('2d');
-    g.scale(cdpr, cdpr); g.translate(90, 0);
-    g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#17110d';
-    for (var i = 0; i < segs.length; i++) {
-      var s = segs[i];
-      g.lineWidth = s.w; g.beginPath(); g.moveTo(s.x0, s.y0); g.quadraticCurveTo(s.cx, s.cy, s.x1, s.y1); g.stroke();
-    }
   }
 
   function buildSprites() {
@@ -263,7 +250,7 @@
     vw = window.innerWidth; vh = window.innerHeight; mobile = vw < 760;
     dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1.5 : 2);
     var slow = (navigator.hardwareConcurrency || 8) <= 4;
-    budget = { canopy: (mobile ? 230 : 440) * (slow ? 0.7 : 1), fall: mobile ? 36 : 70, snow: mobile ? 44 : 90, perFrame: 5 };
+    budget = { canopy: (mobile ? 230 : 400) * (slow ? 0.7 : 1), fall: mobile ? 36 : 64, snow: mobile ? 44 : 90, perFrame: 5 };
     canvas.width = Math.ceil(vw * dpr); canvas.height = Math.ceil(vh * dpr);
     H = vh;
   }
@@ -327,17 +314,27 @@
     return knots[knots.length - 1][1];
   }
 
-  /* ---------- Drawing ---------- */
-  function drawSprite(img, x, y, rot, s) {
-    var c = Math.cos(rot) * s, sn = Math.sin(rot) * s;
-    ctx.setTransform(c * dpr, sn * dpr, -sn * dpr, c * dpr, x * dpr, y * dpr);
-    ctx.drawImage(img, -PIVX, -PIVY, SPR, SPR);
+  /* ---------- Drawing ----------
+   * Three cached layers keep idle frames cheap: a low-res sky (gradient, light, vignette),
+   * a scene layer (branches, snow caps, blossom and leaves) that re-renders only when the
+   * season, the orchard offset or a slow sway tick changes, and the ground where leaves land.
+   * Falling leaves, the snow bank and snowflakes draw directly every frame. */
+  var skyC = null, skyX = null, skyKey = -1, SKY_DIV = 4;
+  var sceneC = null, sceneX = null, sceneDirty = true, sceneAlpha = 0, treeReady = false;
+  var renderedS = -9, renderedOffX = 0, renderedT = -9, renderedSnow = -1, MARGIN = 150;
+  // Adaptive quality: measured frame gaps step the canopy density and refresh rate down on slow devices.
+  var quality = 1, ema = 0.016, slowSince = -1, fastSince = -1, QUALITIES = [1, 0.65, 0.4], qIndex = 0;
+
+  function drawSpriteOn(g, img, x, y, rot, sc) {
+    var c = Math.cos(rot) * sc, sn = Math.sin(rot) * sc;
+    g.setTransform(c * dpr, sn * dpr, -sn * dpr, c * dpr, x * dpr, y * dpr);
+    g.drawImage(img, -PIVX, -PIVY, SPR, SPR);
   }
   function firstAnchor(x) { var lo = 0, hi = anchors.length; while (lo < hi) { var mid = (lo + hi) >> 1; if (anchors[mid].x < x) lo = mid + 1; else hi = mid; } return lo; }
   function firstSeg(x) { var lo = 0, hi = segs.length; while (lo < hi) { var mid = (lo + hi) >> 1; if (Math.min(segs[mid].x0, segs[mid].x1) < x) lo = mid + 1; else hi = mid; } return lo; }
 
   function leafState(a, S) {
-    // blossom opens S .6→1.0, fades 1.35→1.6; leaf unfurls 1.3→1.8; colour turns late summer into autumn, staggered per leaf
+    // blossom opens S .6→1.0 and fades 1.3→1.6; the leaf unfurls 1.3→1.8; colour turns late summer into autumn, staggered per leaf
     var p = a.phase;
     var bl = a.bloom ? smooth(0.58 + p * 0.22, 0.98 + p * 0.12, S) * (1 - smooth(1.3 + p * 0.15, 1.6 + p * 0.1, S)) : 0;
     var lf = smooth(1.28 + p * 0.25, 1.78 + p * 0.2, S);
@@ -346,12 +343,7 @@
   }
 
   function groundY(x) { var c = clamp(Math.floor(x / 20), 0, pile.length - 1); return H - 3 - (pile[c] || 0); }
-  function bakeLanded(p) {
-    gctx.setTransform(1, 0, 0, 1, 0, 0);
-    var c = Math.cos(p.rot) * p.s, sn = Math.sin(p.rot) * p.s;
-    gctx.setTransform(c * dpr, sn * dpr, -sn * dpr, c * dpr, p.x * dpr, p.y * dpr);
-    gctx.drawImage(p.img, -PIVX, -PIVY, SPR, SPR);
-  }
+  function bakeLanded(p) { drawSpriteOn(gctx, p.img, p.x, p.y, p.rot, p.s); }
   function rebuildGround() {
     gctx.setTransform(1, 0, 0, 1, 0, 0); gctx.clearRect(0, 0, ground.width, ground.height);
     for (var i = 0; i < pile.length; i++) pile[i] = 0;
@@ -366,18 +358,140 @@
     if (c < pile.length - 1) pile[c + 1] = Math.min(pile[c + 1] + 1.1 * p.s, 54);
   }
   function detach(a, now) {
-    a.det = true;
+    a.det = true; sceneDirty = true;
     var st = leafState(a, S), b = clamp(Math.round(st.col * (NB - 1)), 0, NB - 1);
     fallers.push({
       x: a.x + offX, y: a.y, vx: (Math.random() - 0.5) * 20, vy: 10 + Math.random() * 20, term: 60 + Math.random() * 60,
       rot: a.rot, rv: (Math.random() - 0.5) * 1.6, fr: 1.2 + Math.random() * 1.6, ph: Math.random() * 6.283, amp: 18 + Math.random() * 30,
-      s: a.scale * 0.95, img: (a.lit ? sprites.lit : sprites.leaf)[b], sDet: now ? S - 0.001 : a.sDet, a: a, born: time
+      s: a.scale * 0.95, img: (a.lit ? sprites.lit : sprites.leaf)[b], sDet: now ? S - 0.001 : a.sDet, a: a
     });
     if (now) a.sDet = S - 0.001;
   }
 
+  function renderSky(pal) {
+    var key = Math.round(S * 250);
+    if (key === skyKey && skyC) return;
+    skyKey = key;
+    var w = Math.ceil(vw / SKY_DIV), h = Math.ceil(H / SKY_DIV);
+    if (!skyC || skyC.width !== w || skyC.height !== h) { skyC = document.createElement('canvas'); skyC.width = w; skyC.height = h; skyX = skyC.getContext('2d', { alpha: false }); }
+    var g = skyX;
+    var sky = g.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, css(pal.bg0)); sky.addColorStop(1, css(pal.bg1));
+    g.fillStyle = sky; g.fillRect(0, 0, w, h);
+    var sx = pal.sunX * w, sy = pal.sunY * h, sr = pal.sunR * Math.max(w, h);
+    var sun = g.createRadialGradient(sx, sy, 0, sx, sy, sr);
+    sun.addColorStop(0, css(pal.sunL, pal.sunA)); sun.addColorStop(0.45, css(pal.sunL, pal.sunA * 0.35)); sun.addColorStop(1, css(pal.sunL, 0));
+    g.fillStyle = sun; g.fillRect(0, 0, w, h);
+    var vig = g.createRadialGradient(w * 0.5, h * 0.45, Math.min(w, h) * 0.35, w * 0.5, h * 0.45, Math.max(w, h) * 0.85);
+    vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,' + (pal.dark ? 0.42 : 0.16) + ')');
+    g.fillStyle = vig; g.fillRect(0, 0, w, h);
+  }
+
+  function renderScene(t, pal, snowBranches) {
+    if (!treeReady) return;
+    var hasLeaves = S > 0.5 && S < 3.6;
+    var dx = offX - renderedOffX;
+    var forced = sceneDirty || Math.abs(dx) > MARGIN - 12 || Math.abs(snowBranches - renderedSnow) > 0.03;
+    var wanted = Math.abs(S - renderedS) > 0.0025 || (hasLeaves && t - renderedT > 0.42 / quality);
+    if (!forced && !(wanted && t - renderedT > 0.06)) return;
+    renderedS = S; renderedOffX = offX; renderedT = t; renderedSnow = snowBranches; sceneDirty = false;
+    var cw = Math.ceil((vw + 2 * MARGIN) * dpr);
+    if (!sceneC || sceneC.width !== cw || sceneC.height !== canvas.height) { sceneC = document.createElement('canvas'); sceneC.width = cw; sceneC.height = canvas.height; sceneX = sceneC.getContext('2d'); }
+    var g = sceneX;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, sceneC.width, sceneC.height);
+    g.setTransform(dpr, 0, 0, dpr, MARGIN * dpr, 0);
+    var x0 = -offX - MARGIN - 40, x1 = -offX + vw + MARGIN + 40;
+    // Branches (segments are sorted by their left end; none is longer than about 260px)
+    g.lineCap = 'round'; g.lineJoin = 'round'; g.strokeStyle = '#17110d';
+    for (var bi = firstSeg(x0 - 280); bi < segs.length; bi++) {
+      var bs = segs[bi]; if (Math.min(bs.x0, bs.x1) > x1) break;
+      if (Math.max(bs.x0, bs.x1) < x0) continue;
+      g.lineWidth = bs.w; g.beginPath(); g.moveTo(bs.x0 + offX, bs.y0); g.quadraticCurveTo(bs.cx + offX, bs.cy, bs.x1 + offX, bs.y1); g.stroke();
+    }
+    // Snow resting on the upper faces of the branches
+    if (snowBranches > 0.02) {
+      for (var si = firstSeg(x0 - 280); si < segs.length; si++) {
+        var sg = segs[si]; if (Math.min(sg.x0, sg.x1) > x1) break;
+        if (sg.w < 2.2 || sg.d === -1 || sg.hz < 0.3) continue;
+        g.strokeStyle = 'rgba(230,238,248,' + (snowBranches * sg.hz * sg.sn).toFixed(2) + ')';
+        g.lineWidth = Math.max(1.2, sg.w * 0.32); g.beginPath();
+        var lift = sg.w * 0.46;
+        g.moveTo(sg.x0 + offX, sg.y0 - lift); g.quadraticCurveTo(sg.cx + offX, sg.cy - lift, sg.x1 + offX, sg.y1 - lift); g.stroke();
+      }
+    }
+    // Blossom and leaves
+    if (hasLeaves) {
+      var litX = pal.sunX * vw - offX, litY = pal.sunY * H, litR = pal.sunR * Math.max(vw, H) * 0.55, litR2 = litR * litR;
+      var autumnWind = 1 + smooth(2.5, 3.0, S) * 0.8;
+      for (var ai = firstAnchor(x0); ai < anchors.length; ai++) {
+        var a = anchors[ai]; if (a.x > x1) break;
+        if (a.y > H + 30 || a.q >= quality) continue;
+        var st = leafState(a, S), x = a.x + offX, y = a.y;
+        if (st.bl > 0.01) drawSpriteOn(g, sprites.blossom[ai % 3], x, y, a.rot + Math.sin(t * 1.1 + a.sway) * 0.05, st.bl * a.scale * 0.9);
+        if (st.lf > 0.01 && !a.det) {
+          var ddx = a.x - litX, ddy = a.y - litY; a.lit = (ddx * ddx + ddy * ddy) < litR2;
+          var b = clamp(Math.round(st.col * (NB - 1)), 0, NB - 1);
+          var sw = Math.sin(t * 1.25 + a.sway) * 0.06 * autumnWind + wind * 0.03;
+          drawSpriteOn(g, (a.lit ? sprites.lit : sprites.leaf)[b], x, y, a.rot + sw, st.lf * a.scale);
+        }
+      }
+    }
+  }
+
+  // Leaves whose time has come let go of the tree (a few per frame, so a fast scroll does not burst).
+  function releaseDue(t) {
+    if (S < 2.5 || !treeReady) return 0;
+    var lx0 = -offX - 70, lx1 = -offX + vw + 70, due = 0, visible = 0;
+    for (var ai = firstAnchor(lx0); ai < anchors.length; ai++) {
+      var a = anchors[ai]; if (a.x > lx1) break;
+      if (a.det || a.y > H + 30) continue;
+      if (a.q >= quality) { if (a.sDet <= S) a.det = true; continue; }
+      if (a.sDet <= S) { if (due < budget.perFrame && fallers.length < budget.fall * quality) { detach(a, false); due++; } }
+      else if (leafState(a, S).lf > 0.5) visible++;
+    }
+    // A leaf lets go now and then while you linger in autumn.
+    if (visible > 0 && S > 2.6 && S < 3.55 && t - idleSince > 1.2 && t - ambientT > 1.6 && fallers.length < budget.fall * quality) {
+      ambientT = t;
+      var tries = 0;
+      while (tries++ < 12) {
+        var ra = anchors[firstAnchor(lx0) + Math.floor(Math.random() * Math.max(1, visible * 1.5))];
+        if (ra && !ra.det && ra.q < quality && ra.x < lx1 && leafState(ra, S).lf > 0.5) { detach(ra, true); break; }
+      }
+    }
+    return due;
+  }
+
+  var DEBUG = /debug/.test(location.search), NOCANVAS = /nocanvas/.test(location.search), dbg = DEBUG ? (window.__orchard = {}) : null;
+  function watchQuality(rawDt, t) {
+    if (document.hidden) return;
+    ema += (Math.min(rawDt, 0.25) - ema) * 0.08;
+    if (ema > 0.036) { fastSince = -1; if (slowSince < 0) slowSince = t; else if (t - slowSince > 1.5 && qIndex < QUALITIES.length - 1) { setQuality(qIndex + 1); slowSince = -1; } }
+    else if (ema < 0.019) { slowSince = -1; if (fastSince < 0) fastSince = t; else if (t - fastSince > 8 && qIndex > 0) { setQuality(qIndex - 1); fastSince = -1; } }
+    else { slowSince = -1; fastSince = -1; }
+    if (dbg) { dbg.quality = quality; dbg.ema = ema; }
+  }
+  function setQuality(i) {
+    qIndex = i; quality = QUALITIES[i]; ema = 0.024;
+    var cap = quality < 0.5 ? 1.25 : (mobile ? 1.5 : 2);
+    var nd = Math.min(window.devicePixelRatio || 1, cap);
+    if (nd !== dpr) {
+      dpr = nd; canvas.width = Math.ceil(vw * dpr); canvas.height = Math.ceil(vh * dpr);
+      buildSprites();
+      ground = document.createElement('canvas'); ground.width = canvas.width; ground.height = canvas.height; gctx = ground.getContext('2d');
+      landed.forEach(function (p) { var st = leafState(p.a, 3.2), b = clamp(Math.round(st.col * (NB - 1)), 0, NB - 1); p.img = (p.a.lit ? sprites.lit : sprites.leaf)[b]; });
+      fallers.forEach(function (p) { var st = leafState(p.a, 3.2), b = clamp(Math.round(st.col * (NB - 1)), 0, NB - 1); p.img = (p.a.lit ? sprites.lit : sprites.leaf)[b]; });
+      rebuildGround();
+    }
+    skyKey = -1; sceneDirty = true;
+  }
+  var tick = 0;
   function frame(t) {
-    var dt = Math.min(0.05, Math.max(0.001, t - lastT)); lastT = t; time = t;
+    var scrollNow = lenis.scroll || 0;
+    var busy = Math.abs(scrollNow - lastScroll) > 0.5 || fallers.length > 0 || t - idleSince < 0.6 || sceneAlpha < 1;
+    if (!busy && (++tick & 1)) return;
+    var rawDt = t - lastT;
+    var dt = Math.min(0.05, Math.max(0.001, rawDt)); lastT = t; time = t;
+    watchQuality(busy ? rawDt : rawDt / 2, t);
     var scroll = lenis.scroll || 0;
     S = seasonAt(scroll);
     if (Math.abs(scroll - lastScroll) > 0.5) { gust += (scroll - lastScroll) * 0.002; idleSince = t; }
@@ -388,75 +502,32 @@
     var pal = paletteAt(S);
     applyPalette(pal);
 
-    // When scrolling back up through autumn, leaves return to the tree.
+    // Scrolling back up through autumn puts the leaves back on the tree.
     if (S < lastS) {
-      for (var i = fallers.length - 1; i >= 0; i--) if (fallers[i].sDet > S) { fallers[i].a.det = false; fallers.splice(i, 1); }
-      for (var j = landed.length - 1; j >= 0; j--) if (landed[j].sDet > S) { landed[j].a.det = false; landed.splice(j, 1); groundDirty = true; }
+      for (var i = fallers.length - 1; i >= 0; i--) if (fallers[i].sDet > S) { fallers[i].a.det = false; fallers.splice(i, 1); sceneDirty = true; }
+      for (var j = landed.length - 1; j >= 0; j--) if (landed[j].sDet > S) { landed[j].a.det = false; landed.splice(j, 1); groundDirty = true; sceneDirty = true; }
       if (groundDirty) rebuildGround();
     }
     lastS = S;
 
-    var winter = Math.max(1 - S / 0.85, smooth(3.3, 3.9, S)); // how deep the snow is
+    var winter = Math.max(1 - S / 0.85, smooth(3.3, 3.9, S));
     var snowBranches = Math.max(1 - S / 0.75, smooth(3.45, 3.95, S));
-    var autumnWind = 1 + smooth(2.5, 3.0, S) * 0.8;
+    if (NOCANVAS) return;
 
-    // Sky
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    var sky = ctx.createLinearGradient(0, 0, 0, H);
-    sky.addColorStop(0, css(pal.bg0)); sky.addColorStop(1, css(pal.bg1));
-    ctx.fillStyle = sky; ctx.fillRect(0, 0, vw, H);
-    // Light
-    var sx = pal.sunX * vw, sy = pal.sunY * H, sr = pal.sunR * Math.max(vw, H);
-    var sun = ctx.createRadialGradient(sx, sy, 0, sx, sy, sr);
-    sun.addColorStop(0, css(pal.sunL, pal.sunA)); sun.addColorStop(0.45, css(pal.sunL, pal.sunA * 0.35)); sun.addColorStop(1, css(pal.sunL, 0));
-    ctx.fillStyle = sun; ctx.fillRect(0, 0, vw, H);
+    releaseDue(t);
+    renderSky(pal);
+    renderScene(t, pal, snowBranches);
 
-    // Branches
-    if (branchCache) {
-      var srcX = (-offX + 90) * cdpr;
-      ctx.drawImage(branchCache, srcX, 0, vw * cdpr, H * cdpr, 0, 0, vw, H);
-    }
-    // Snow resting on the branches
-    if (snowBranches > 0.02) {
-      ctx.lineCap = 'round';
-      var x0 = -offX - 60, x1 = -offX + vw + 60;
-      for (var si = firstSeg(x0); si < segs.length; si++) {
-        var sg = segs[si]; if (Math.min(sg.x0, sg.x1) > x1) break;
-        if (sg.w < 2.2 || sg.d === -1 || sg.hz < 0.3) continue;
-        ctx.strokeStyle = 'rgba(230,238,248,' + (snowBranches * sg.hz * sg.sn).toFixed(2) + ')';
-        ctx.lineWidth = Math.max(1.2, sg.w * 0.32); ctx.beginPath();
-        var lift = sg.w * 0.46;
-        ctx.moveTo(sg.x0 + offX, sg.y0 - lift); ctx.quadraticCurveTo(sg.cx + offX, sg.cy - lift, sg.x1 + offX, sg.y1 - lift); ctx.stroke();
-      }
-    }
-
-    // Canopy
-    var lx0 = -offX - 70, lx1 = -offX + vw + 70, due = 0, visibleLeaves = 0;
-    var litX = sx - offX, litY = sy, litR = sr * 0.55;
-    for (var ai = firstAnchor(lx0); ai < anchors.length; ai++) {
-      var a = anchors[ai]; if (a.x > lx1) break;
-      if (a.y > H + 30) continue;
-      var st = leafState(a, S);
-      var x = a.x + offX, y = a.y;
-      if (st.bl > 0.01) {
-        drawSprite(sprites.blossom[ai % 3], x, y, a.rot + Math.sin(t * 1.1 + a.sway) * 0.05, st.bl * a.scale * 0.9);
-      }
-      if (st.lf > 0.01 && !a.det) {
-        if (a.sDet <= S) { if (due < budget.perFrame && fallers.length < budget.fall) { detach(a, false); due++; } continue; }
-        var ddx = a.x - litX, ddy = a.y - litY; a.lit = (ddx * ddx + ddy * ddy) < litR * litR;
-        var b = clamp(Math.round(st.col * (NB - 1)), 0, NB - 1);
-        var sw = Math.sin(t * 1.25 + a.sway) * 0.06 * autumnWind + wind * 0.03;
-        drawSprite((a.lit ? sprites.lit : sprites.leaf)[b], x, y, a.rot + sw, st.lf * a.scale);
-        visibleLeaves++;
-      }
-    }
-    // A leaf lets go now and then while you linger in autumn.
-    if (S > 2.6 && S < 3.55 && visibleLeaves > 0 && t - idleSince > 1.2 && t - ambientT > 1.6 && fallers.length < budget.fall) {
-      ambientT = t;
-      var tries = 0; while (tries++ < 12) {
-        var ra = anchors[firstAnchor(lx0) + Math.floor(Math.random() * Math.max(1, visibleLeaves))];
-        if (ra && !ra.det && ra.x < lx1 && leafState(ra, S).lf > 0.5) { detach(ra, true); break; }
-      }
+    // Composite: sky, branches, then the canopy layer, which breathes a little between renders
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1;
+    ctx.drawImage(skyC, 0, 0, vw, H);
+    if (treeReady && sceneC) {
+      sceneAlpha = Math.min(1, sceneAlpha + dt * 1.6);
+      ctx.globalAlpha = sceneAlpha;
+      var breathe = S > 0.75 && S < 3.45 ? 1 : 0;
+      var driftX = (offX - renderedOffX) + Math.sin(t * 0.8) * 1.2 * breathe, driftY = Math.sin(t * 0.63 + 1) * 0.6 * breathe;
+      ctx.drawImage(sceneC, driftX - MARGIN, driftY, vw + 2 * MARGIN, H);
+      ctx.globalAlpha = 1;
     }
 
     // Falling leaves
@@ -471,20 +542,15 @@
         p.rot = (Math.sin(p.rot) > 0 ? 1 : -1) * Math.PI / 2 + (Math.random() - 0.5) * 0.7;
         settle(p); landed.push(p); bakeLanded(p); fallers.splice(fi, 1); continue;
       }
-      drawSprite(p.img, p.x, p.y, p.rot, p.s);
+      drawSpriteOn(ctx, p.img, p.x, p.y, p.rot, p.s);
     }
     // The ground
     ctx.setTransform(1, 0, 0, 1, 0, 0);
     if (landed.length) ctx.drawImage(ground, 0, 0);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     if (winter > 0.02) drawSnowBank(winter);
-    // Snow in the air
     snowfall(dt, winter, t);
-    // Vignette
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.globalAlpha = 1;
-    var vig = ctx.createRadialGradient(vw * 0.5, H * 0.45, Math.min(vw, H) * 0.35, vw * 0.5, H * 0.45, Math.max(vw, H) * 0.85);
-    vig.addColorStop(0, 'rgba(0,0,0,0)'); vig.addColorStop(1, 'rgba(0,0,0,' + (pal.dark ? 0.42 : 0.16) + ')');
-    ctx.fillStyle = vig; ctx.fillRect(0, 0, vw, H);
   }
 
   function drawSnowBank(w) {
@@ -503,21 +569,29 @@
   }
 
   function snowfall(dt, w, t) {
-    var target = Math.round(budget.snow * w);
-    while (flakes.length < target) flakes.push({ x: Math.random() * vw, y: -8 - Math.random() * H * 0.3, vy: 20 + Math.random() * 42, ph: Math.random() * 6.283, k: Math.floor(Math.random() * 4), s: 0.6 + Math.random() * 0.8, a: 0 });
-    for (var i = flakes.length - 1; i >= 0; i--) {
-      var f = flakes[i];
-      var dying = i >= target;
-      f.a = dying ? f.a - dt * 0.7 : Math.min(1, f.a + dt * 0.8);
-      if (f.a <= 0) { flakes.splice(i, 1); continue; }
-      f.y += f.vy * dt; f.x += (Math.sin(t * 0.6 + f.ph) * 14 + wind * 10) * dt;
-      if (f.y > H + 8) { if (dying) { flakes.splice(i, 1); continue; } f.y = -8; f.x = Math.random() * vw; }
-      if (f.x < -8) f.x = vw + 8; else if (f.x > vw + 8) f.x = -8;
-      ctx.globalAlpha = f.a;
-      ctx.setTransform(f.s * dpr, 0, 0, f.s * dpr, f.x * dpr, f.y * dpr);
-      ctx.drawImage(sprites.snow[f.k], -SPR / 2, -SPR / 2, SPR, SPR);
+    var target = Math.round(budget.snow * w * quality);
+    while (flakes.length < target) flakes.push({ x: Math.random() * vw, y: -8 - Math.random() * H * 0.3, vy: 20 + Math.random() * 42, ph: Math.random() * 6.283, r: 1 + Math.random() * 2.2, a: 0 });
+    if (!flakes.length) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    for (var pass = 0; pass < 2; pass++) {
+      ctx.beginPath();
+      for (var i = flakes.length - 1; i >= 0; i--) {
+        var f = flakes[i];
+        if (pass === 0) {
+          var dying = i >= target;
+          f.a = dying ? f.a - dt * 0.7 : Math.min(1, f.a + dt * 0.8);
+          if (f.a <= 0) { flakes.splice(i, 1); continue; }
+          f.y += f.vy * dt; f.x += (Math.sin(t * 0.6 + f.ph) * 14 + wind * 10) * dt;
+          if (f.y > H + 8) { if (dying) { flakes.splice(i, 1); continue; } f.y = -8; f.x = Math.random() * vw; }
+          if (f.x < -8) f.x = vw + 8; else if (f.x > vw + 8) f.x = -8;
+        }
+        var r = pass === 0 ? f.r * 2.1 : f.r;
+        if (f.a < 0.999) { if (Math.random() > f.a) continue; }
+        ctx.moveTo(f.x + r, f.y); ctx.arc(f.x, f.y, r, 0, 6.2832);
+      }
+      ctx.fillStyle = pass === 0 ? 'rgba(236,243,252,0.22)' : 'rgba(246,250,255,0.82)';
+      ctx.fill();
     }
-    ctx.globalAlpha = 1;
   }
 
   var cssS = -1;
@@ -535,12 +609,21 @@
   function rebuild() {
     measure();
     layoutStage();
-    buildSprites();
-    buildTree();
     pile = new Array(Math.ceil(vw / 20) + 2).fill(0);
     ground = document.createElement('canvas'); ground.width = canvas.width; ground.height = canvas.height; gctx = ground.getContext('2d');
-    fallers = []; landed = []; anchors.forEach(function (a) { a.det = false; }); flakes = [];
+    fallers = []; landed = []; flakes = []; skyKey = -1; sceneDirty = true; treeReady = false; sceneAlpha = 0; renderedS = -9; renderedT = -9;
     lastW = vw; lastH = vh;
+    var token = ++buildToken;
+    idle(function () {
+      if (token !== buildToken) return;
+      buildSprites();
+      idle(function () {
+        if (token !== buildToken) return;
+        buildTree();
+        anchors.forEach(function (a) { a.det = false; });
+        treeReady = true; sceneDirty = true;
+      });
+    });
   }
 
   /* ---------- Scroll: Lenis + ScrollTrigger ---------- */
@@ -591,6 +674,8 @@
   function startIntro() { if (started) return; started = true; frostIntro(); }
   fontsReady.then(startIntro); setTimeout(startIntro, 900);
 
+  // The rest of the choreography is set up in short tasks after the first frame.
+  function laterSetup() {
   // Spring: the hero line reveals word by word as the blossom opens.
   (function words() {
     var el = $('.hero-line .words'); if (!el) return;
@@ -610,6 +695,7 @@
   $$('[data-reveal]').forEach(function (el) {
     gsap.from(el, { opacity: 0, y: 24, duration: 1.1, ease: 'power2.out', scrollTrigger: { trigger: el, start: 'top 88%', once: true } });
   });
+  }
 
   // Summer: the orchard holds while the fruit comes to you.
   var stageST = null;
@@ -628,7 +714,6 @@
     });
     gsap.fromTo(head, { opacity: 0, y: 12 }, { opacity: 1, y: 0, ease: 'none', scrollTrigger: { trigger: stageEl, start: 'top 40%', end: 'top top', scrub: true } });
   }
-  setupStage();
   // Keyboard users: focusing a card brings it into the middle of the orchard.
   rowEl.addEventListener('focusin', function (e) {
     if (!stage || !stageST) return;
@@ -655,6 +740,8 @@
       }
     });
   })();
+
+  idle(function () { laterSetup(); idle(function () { setupStage(); ScrollTrigger.refresh(); }); });
 
   /* ---------- Resize ---------- */
   var rt;
